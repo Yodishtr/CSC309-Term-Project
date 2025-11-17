@@ -1,0 +1,108 @@
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum RoleType {
+  regular
+  cashier
+  manager
+  superuser
+}
+
+enum TransactionType {
+  purchase
+  redemption
+  adjustment
+  event
+  transfer
+}
+
+enum PromotionType {
+  automatic
+  onetime
+}
+
+model User {
+  id          Int         @id @default(autoincrement())
+  utorid      String      @unique
+  name        String?
+  email       String      @unique
+  password    String?
+
+  birthday    String?
+  avatarUrl   String?
+
+  role        RoleType    @default(regular)
+  verified    Boolean     @default(false)
+  suspicious  Boolean     @default(false)
+
+  points      Int         @default(0)
+  usedPromotions Promotion[] @relation("usedPromos")
+  lastLogin   DateTime?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  
+  resetToken       String?
+  resetExpiresAt   DateTime?
+
+  token String?
+  expiresAt DateTime?
+
+  transactions  Transaction[] @relation("customer")
+  createdTransactions Transaction[] @relation("createdTransaction")
+  attendingEvents Event[] @relation("eventGuests")
+  organizingEvents Event[] @relation("eventOrganizers")
+}
+
+model Transaction {
+  id          Int    @id @default(autoincrement())
+  utorid      String
+  user        User   @relation("customer", fields: [utorid], references: [utorid])
+
+  type        TransactionType
+  spent       Float?                    // only for purchase
+  points      Int                     // for a transfer, the earned should be negative for sender and positive for recipient?
+  remark      String @default("")
+  promotionIds Promotion[] @relation("transactionPromotion")
+  relatedId   Int?
+  suspicious  Boolean   @default(false)
+
+  createdBy   String
+  created     User   @relation("createdTransaction", fields: [createdBy], references: [utorid])
+  date        DateTime @default(now())
+}
+
+model Event {
+  id          Int     @id @default(autoincrement())
+  name        String
+  description String
+  location    String
+  startTime   DateTime
+  endTime     DateTime
+  capacity    Int?
+  spaceRemain Int?
+  pointsRemain Int  
+  pointsAwarded Int   @default(0)
+  published   Boolean @default(false)
+  organizers  User[] @relation("eventOrganizers")
+  guests      User[] @relation("eventGuests")
+}
+
+model Promotion {
+  id          Int    @id @default(autoincrement())
+  name        String
+  description String
+  type        PromotionType
+  startTime   DateTime?
+  endTime     DateTime?
+  minSpending Float @default(0)
+  rate        Float @default(0)
+  points      Int @default(0)
+  usedBy      User[] @relation("usedPromos")
+  transactions Transaction[] @relation("transactionPromotion")
+}
