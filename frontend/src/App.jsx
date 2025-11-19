@@ -1,14 +1,13 @@
-import './App.css'
+import { Outlet } from "react-router-dom";
 
-function App() {
+// main page, wraps all pages of the app
 
+export default function App() {
   return (
-    <div className="min-h-screen flex items-center justify-center">
-      <h1 className="text-4xl font-bold text-pink-500">
-        Tailwind is working!
-      </h1>
+    <div className="min-h-screen bg-slate-100">
+      <main className="p-6">
+        <Outlet />
+      </main>
     </div>
-  )
+  );
 }
-
-export default App
