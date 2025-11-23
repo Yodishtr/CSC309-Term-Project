@@ -8,6 +8,11 @@ import PublicLayout from "../layouts/PublicLayout";
 import ProtectedRoute from "../auth/ProtectedRoutes";
 import Transactions from "../pages/Transactions";
 import Dashboard from "../pages/Dashboard";
+import Events from "../pages/Events";
+import EventDetail from "../pages/EventDetail";
+import EventForm from "../pages/EventForm";
+import ManageGuests from "../pages/ManageGuests";
+import AwardPoints from "../pages/AwardPoints";
 
 const router = createBrowserRouter([
   {
@@ -19,7 +24,13 @@ const router = createBrowserRouter([
                 { element: <AppLayout />, children:
                   [
                   {index: true, element: <Dashboard />},
-                  {path: "transactions", element: <Transactions />}
+                  {path: "transactions", element: <Transactions />},
+                  {path: "events", element: <Events />},
+                  {path: "events/create", element: <EventForm />},
+                  {path: "events/:eventId", element: <EventDetail />},
+                  {path: "events/:eventId/edit", element: <EventForm />},
+                  {path: "events/:eventId/guests", element: <ManageGuests />},
+                  {path: "events/:eventId/award-points", element: <AwardPoints />},
                   ]
                  },
             ]
