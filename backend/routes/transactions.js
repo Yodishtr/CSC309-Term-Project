@@ -100,16 +100,20 @@ router.post('/', requireRole(['cashier', 'manager', 'superuser']), async (req, r
             const result = await prisma.$transaction( async (prisma) => {
                 const purchase = await prisma.transaction.create({
                     data: {
-                        utorid,
                         type,
                         spent,
                         points: totalPoints,
-                        remark: remark || null,
+                        ...(remark ? { remark } : {}),
                         promotionIds: {
                             connect: oneTime.map((id) => ({ id }))
                         },
-                        createdBy: req.auth.utorid,
-                        suspicious
+                        suspicious,
+                        user: {
+                            connect: { utorid }, // matches fields: [utorid], references: [utorid]
+                        },
+                        created: {
+                            connect: { utorid: req.auth.utorid },
+                        },
                     },
                     select: {
                         id: true,
@@ -240,13 +244,25 @@ router.get('/', requireRole(['manager', 'superuser']), async (req, res) => {
 
         if (name) {
             where.OR = [
-                { utorid: name },
-                {user: { name: name }}
-            ]
+                {
+                utorid: {
+                    contains: name,
+                },
+                },
+                {
+                user: {
+                    name: {
+                    contains: name,
+                    },
+                },
+                },
+            ];
         }
         if (createdBy) {
             if (!utoridRegex.test(createdBy)) { return res.status(400).json({error: "Bad Request"})}
-            where.createdBy = createdBy
+              where.createdBy = {
+                contains: createdBy,
+            };
         }
         if (suspicious) {
             if (!['true', 'false'].includes(suspicious)) { return res.status(400).json({error: "Bad Request"}) }
@@ -321,15 +337,14 @@ router.get('/', requireRole(['manager', 'superuser']), async (req, res) => {
             toReturn.remark = t.remark
             toReturn.createdBy = t.createdBy
             toReturn.type = t.type
+            toReturn.suspicious = t.suspicious
 
             if (t.type === 'purchase') {
                 toReturn.spent = t.spent
                 toReturn.promotionIds = promoIds
-                toReturn.suspicious = t.suspicious
             } else if (t.type === 'adjustment') {
                 toReturn.relatedId = t.relatedId
                 toReturn.promotionIds = promoIds
-                toReturn.suspicious = t.suspicious
             } else if (t.type === 'redemption') {
                 toReturn.relatedId = t.relatedId
                 toReturn.redeemed = 0 - t.points
@@ -337,15 +352,20 @@ router.get('/', requireRole(['manager', 'superuser']), async (req, res) => {
             } else if (t.type === 'event') {
                 delete toReturn.amount
                 toReturn.rewarded = t.points
-                delete toReturn.utorid
                 toReturn.recipient = t.utorid
                 toReturn.eventId = t.relatedId
             } else if (t.type === 'transfer') {
-                delete toReturn.utorid
-                toReturn.sender = t.utorid
-                delete toReturn.amount
-                toReturn.sent = 0 - t.points
-                toReturn.recipient = t.relatedId
+                if (t.points > 0) {
+                    toReturn.recipient = t.utorid
+                    delete toReturn.amount
+                    toReturn.received = t.points
+                    toReturn.sender = t.relatedId
+                } else {
+                    toReturn.sender = t.utorid
+                    delete toReturn.amount
+                    toReturn.sent = 0 - t.points
+                    toReturn.recipient = t.relatedId
+                }
             }
             fullReturn.push(toReturn)
         }
@@ -423,68 +443,111 @@ router.get('/:transactionId', requireRole(['manager', 'superuser']), async (req,
         return res.status(500).json({'error': err.message})}    
 })
 
-router.patch('/:transactionId/suspicious', requireRole(['manager', 'superuser']), async (req, res) => {
+router.patch(
+  "/:transactionId/suspicious",
+  requireRole(["manager", "superuser"]),
+  async (req, res) => {
     try {
-        const id = Number(req.params.transactionId);
-        if (!Number.isInteger(id) || id <= 0) {
-            return res.status(400).json({ error: "Bad Request" });
-        }
-        const {suspicious} = req.body
-        if (typeof suspicious !== 'boolean') { return res.status(400).json({ error: "Bad Request" }) }
+      const id = Number(req.params.transactionId);
+      if (!Number.isInteger(id) || id <= 0) {
+        return res.status(400).json({ error: "Bad Request" });
+      }
 
-        const t = await prisma.transaction.findUnique({
-            where: { id },
-            select: {
-                id: true,
-                utorid: true,
-                type: true,
-                spent: true,
-                points: true,
-                suspicious: true,
-                remark: true,
-                createdBy: true,
-                promotionIds: { select: { id: true } },
-            }
-        })
-        if (!t) { return res.status(404).json({ error: "Not Found" }) }
+      const { suspicious } = req.body;
+      if (typeof suspicious !== "boolean") {
+        return res.status(400).json({ error: "Bad Request" });
+      }
 
-        if (t.suspicious === suspicious) {
-            return res.status(200).json({message: "OK"})
-        }
-        if (t.type !== 'purchase' ) { return res.status(200).json({message: "OK"})}
+      const t = await prisma.transaction.findUnique({
+        where: { id },
+        select: {
+          id: true,
+          utorid: true,
+          type: true,
+          spent: true,
+          points: true,
+          suspicious: true,
+          remark: true,
+          createdBy: true,
+          promotionIds: { select: { id: true } },
+        },
+      });
 
-        const points = suspicious? 0 - t.points : t.points
+      if (!t) {
+        return res.status(404).json({ error: "Not Found" });
+      }
 
-        const [updatedT, updatedU] = await prisma.$transaction([
-            prisma.transaction.update({
-                where: {id},
-                data: {suspicious},
-                select: {
-                    id: true,
-                    utorid: true,
-                    type: true,
-                    spent: true,
-                    points: true,
-                    suspicious: true,
-                    remark: true,
-                    createdBy: true,
-                    promotionIds: { select: { id: true } },
-                }
-            }),
-            prisma.user.update({
-                where: {utorid: t.utorid},
+      // If nothing changes, just return the current transaction in the correct shape
+      if (t.suspicious === suspicious) {
+        const ids = t.promotionIds.map((p) => p.id);
+        return res.status(200).json({
+          id: t.id,
+          utorid: t.utorid,
+          type: t.type,
+          spent: t.spent,
+          amount: t.points,
+          promotionIds: ids,
+          suspicious: t.suspicious,
+          remark: t.remark,
+          createdBy: t.createdBy,
+        });
+      }
+
+      // Compute delta for user points.
+      // Only purchases, adjustments, and event transactions will reverse the balance; everything else just flips the flag.
+      let pointsDelta = 0;
+      if (t.type === "purchase" || t.type === "adjustment" || t.type === "event") {
+        pointsDelta = suspicious ? -t.points : t.points;
+      }
+
+      const [updatedT] = await prisma.$transaction([
+        prisma.transaction.update({
+          where: { id },
+          data: { suspicious },
+          select: {
+            id: true,
+            utorid: true,
+            type: true,
+            spent: true,
+            points: true,
+            suspicious: true,
+            remark: true,
+            createdBy: true,
+            promotionIds: { select: { id: true } },
+          },
+        }),
+        ...(pointsDelta !== 0
+          ? [
+              prisma.user.update({
+                where: { utorid: t.utorid },
                 data: {
-                    points: {increment: points}
-                }
-            })
-        ])
+                  points: { increment: pointsDelta },
+                },
+              }),
+            ]
+          : []),
+      ]);
 
-        const ids = t.promotionIds.map(p => p.id);
+      const ids = updatedT.promotionIds.map((p) => p.id);
 
-        return res.status(200).json({id: updatedT.id, utorid: updatedT.utorid, type: updatedT.type, spent: updatedT.spent, amount: updatedT.points, promotionIds: ids, suspicious: updatedT.suspicious, remark: updatedT.remark, createdBy: updatedT.createdBy})
+      return res.status(200).json({
+        id: updatedT.id,
+        utorid: updatedT.utorid,
+        type: updatedT.type,
+        spent: updatedT.spent,
+        amount: updatedT.points,
+        promotionIds: ids,
+        suspicious: updatedT.suspicious,
+        remark: updatedT.remark,
+        createdBy: updatedT.createdBy,
+      });
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({ error: err.message });
+    }
+  }
+);
 
-    } catch (err) {return res.status(500).json({'error': err.message})}    
-})
 
 router.patch('/:transactionId/processed', requireRole(['cashier', 'manager', 'superuser']), async (req, res) => {
     try {
@@ -505,6 +568,14 @@ router.patch('/:transactionId/processed', requireRole(['cashier', 'manager', 'su
         })
         if (!old) { return res.status(404).json({ error: "Not Found" }) }
         if (old.type !== 'redemption' || old.relatedId) { return res.status(400).json({error: "Bad Request"}) }
+
+        const user = await prisma.user.findUnique({
+            where: {utorid: old.utorid},
+            select: {points: true}
+        })
+        console.log(user.points)
+        console.log(old.points)
+        if (user.points < 0 - old.points) { return res.status(400).json({error: "Insufficient Points"})}
 
         const {processed} = req.body
         if (typeof processed !== 'boolean' || processed !== true) { return res.status(400).json({error: "Bad Request"}) }

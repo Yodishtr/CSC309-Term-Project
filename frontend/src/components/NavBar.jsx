@@ -17,6 +17,7 @@ export default function Navbar() {
     { name: "Home", to: "/" },
     { name: "Events", to: "/events" },
     { name: "Transactions", to: "/transactions" },
+    { name: "Promotions", to: "/promotions"}
   ];
 
   // add Users link for manager views
