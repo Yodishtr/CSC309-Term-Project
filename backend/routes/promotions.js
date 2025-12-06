@@ -60,7 +60,7 @@ router.post('/', requireRole(['manager', 'superuser']), async (req, res) => {
 
 router.get('/', requireRole(['regular', 'cashier', 'manager', 'superuser']), async (req, res) => {
     try {
-        const {name, type, page, limit, started, ended} = req.query
+        const {name, type, page, limit, started, ended, view} = req.query
         const now = new Date()
         let pageNum = page ?? 1;
         let pageLimit = limit ?? 10;
@@ -73,8 +73,13 @@ router.get('/', requireRole(['regular', 'cashier', 'manager', 'superuser']), asy
         if (name && typeof name !== 'string') { return res.status(400).json({error: "Bad Request"}) }
         if (type && !['one-time', 'automatic'].includes(type)) { return res.status(400).json({error: "Bad Request"}) }
 
-        
-        const where = {name}
+        const where = {};
+
+        if (name && typeof name === "string") {
+            where.name = {
+                contains: name
+            };
+        }
         let newType = undefined
         if (type !== null) {
             newType = type
@@ -100,13 +105,15 @@ router.get('/', requireRole(['regular', 'cashier', 'manager', 'superuser']), asy
         });
         const requesterRole = getRole.role  
 
-        if (requesterRole === 'regular') {
+        if (requesterRole === 'regular' || requesterRole === 'cashier') {
             where.startTime = { lte: now };
             where.endTime = { gt: now }
-            where.usedBy = {
-                none: { utorid: req.auth.utorid }
-            };
-            newType = 'onetime'
+            if (requesterRole === 'regular' || (view && view === 'regular')) {
+                where.usedBy = {
+                    none: { utorid: req.auth.utorid }
+                };
+                newType = 'onetime'
+            }
             if (started || ended) { return res.status(400).json({error: "Bad Request"}) }
         } else if (['manager', 'superuser'].includes(requesterRole)) {
             if (started && ended) { return res.status(400).json({error: "Bad Request"}) }
@@ -144,7 +151,14 @@ router.get('/:promotionId', requireRole(['regular', 'cashier', 'manager', 'super
     try {
         const id = parseInt(req.params.promotionId, 10);
         const now = new Date()
-        const promo = await prisma.promotion.findFirst({
+
+        const getRole = await prisma.user.findUnique({
+            where: { id: req.auth.id },
+            select: { role: true }
+        });
+        const requesterRole = getRole.role
+        if (requesterRole === 'regular' || requesterRole === 'cashier') {
+                    const promo = await prisma.promotion.findFirst({
             where: {
                 id,
                 endTime: { gte: now },
@@ -163,6 +177,28 @@ router.get('/:promotionId', requireRole(['regular', 'cashier', 'manager', 'super
         })
         if (!promo) { return res.status(404).json({error: "Not Found"})}
         return res.status(200).json(promo)
+        }
+        else {
+                    const promo = await prisma.promotion.findFirst({
+            where: {
+                id
+            },
+            select: {
+                id: true,
+                name: true,
+                description: true,
+                type: true,
+                startTime: true,
+                endTime: true,
+                minSpending: true,
+                rate: true,
+                points: true
+            }
+        })
+        if (!promo) { return res.status(404).json({error: "Not Found"})}
+        return res.status(200).json(promo)
+        }
+        
     } catch (err) {
         console.log("get promotion by id error", err.message)
         return res.status(500).json({'error': err.message})}

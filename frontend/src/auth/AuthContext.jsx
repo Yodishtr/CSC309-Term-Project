@@ -10,6 +10,13 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(!!token);
   const [currentView, setCurrentView] = useState(null);
 
+  // If token disappears (manually removed or expired), force logout
+  useEffect(() => {
+    if (!token) {
+      logout();
+    }
+  }, [token]);
+
   // fetch current user info when token changes
   useEffect(() => {
     if (!token) {

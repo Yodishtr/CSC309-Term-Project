@@ -6,7 +6,7 @@ import Login from "../pages/Login";
 import AppLayout from "../layouts/AppLayout";
 import PublicLayout from "../layouts/PublicLayout";
 import ProtectedRoute from "../auth/ProtectedRoutes";
-import Transactions from "../pages/Transactions";
+import Transactions from "../pages/transactions/Transactions";
 import Dashboard from "../pages/Dashboard";
 import Events from "../pages/Events";
 import EventDetail from "../pages/EventDetail";
@@ -19,6 +19,10 @@ import ResetPassword from "../pages/ResetPassword";
 import Users from "../pages/Users";
 import UserDetail from "../pages/UserDetail";
 import Register from "../pages/Register";
+import Promotions from "../pages/promotions/Promotions";
+import NewPromotion from "../pages/promotions/NewPromotion";
+import EditPromotion from "../pages/promotions/EditPromotion";
+import NotFoundPage from "../pages/NotFoundPage";
 
 
 const router = createBrowserRouter([
@@ -42,6 +46,10 @@ const router = createBrowserRouter([
                   {path: "users", element: <Users />},
                   {path: "users/:userId", element: <UserDetail />},
                   {path: "register", element: <Register />},
+                  {path: "promotions", element: <Promotions/>},
+                  {path: "promotions/new", element: <NewPromotion />},
+                  {path: "promotions/edit/:promotionId", element: <EditPromotion />},
+                  { path: "*", element: <NotFoundPage /> },
                   ]
                  },
             ]
@@ -49,6 +57,7 @@ const router = createBrowserRouter([
         { path: "login", element: <PublicLayout /> },
         { path: "forgot-password", element: <ForgotPassword /> },
         { path: "reset-password/:token", element: <ResetPassword /> },
+        { path: "*", element: <NotFoundPage /> }, 
     ],
   },
 ]);

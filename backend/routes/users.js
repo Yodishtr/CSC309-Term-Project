@@ -527,13 +527,19 @@ router.patch('/:userId', requireRole(['manager', 'superuser']), async (req, res)
 
 router.post('/:userId/transactions', requireRole(['regular', 'cashier', 'manager', 'superuser']), async (req, res) => {
     try {
-        const id = Number(req.params.userId);
-        if (!Number.isInteger(id) || id <= 0) {
-            return res.status(400).json({ error: 'Bad Request' });
-        }
 
-        const recipient = await prisma.user.findUnique({
-            where: {id},
+        const getRole = await prisma.user.findUnique({
+            where: { id: req.auth.id },
+            select: { role: true }
+        });
+        const requesterRole = getRole.role  
+        let recipient
+
+        const id = req.params.userId
+        recipient = await prisma.user.findUnique({
+            where: {
+                utorid: id
+            },
             select: {
                 utorid: true,
                 id: true
@@ -557,7 +563,7 @@ router.post('/:userId/transactions', requireRole(['regular', 'cashier', 'manager
         if (!Number.isInteger(amount) || amount <= 0 || amount > sender.points) { return res.status(400).json({error: "Bad Request"}) }
         if (sender.utorid === recipient.utorid) { return res.status(400).json({error: "Bad Request"})}
 
-        const [transaction, update1, update2] = await prisma.$transaction([
+        const [transactionSend, transactionReceive, update1, update2] = await prisma.$transaction([
             prisma.transaction.create({
                 data: {
                     utorid: sender.utorid,
@@ -576,6 +582,16 @@ router.post('/:userId/transactions', requireRole(['regular', 'cashier', 'manager
                     type: true
                 }
             }),
+            prisma.transaction.create({
+                data: {
+                    utorid: recipient.utorid,
+                    type: 'transfer',
+                    points: amount,
+                    remark, 
+                    relatedId: sender.id,
+                    createdBy: sender.utorid
+                }
+            }),
             prisma.user.update({
                 where: {utorid: sender.utorid},
                 data: {
@@ -590,13 +606,13 @@ router.post('/:userId/transactions', requireRole(['regular', 'cashier', 'manager
             })
         ])
 
-        transaction.sender = transaction.utorid
-        delete transaction.utorid
-        transaction.recipient = recipient.utorid
-        transaction.sent = 0 - transaction.points
-        delete transaction.points
+        transactionSend.sender = transactionSend.utorid
+        delete transactionSend.utorid
+        transactionSend.recipient = recipient.utorid
+        transactionSend.sent = 0 - transactionSend.points
+        delete transactionSend.points
 
-        return res.status(201).json(transaction)
+        return res.status(201).json(transactionSend)
 
     } catch (err) {return res.status(500).json({'error': err.message})}
 })
