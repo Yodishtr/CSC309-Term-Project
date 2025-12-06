@@ -321,8 +321,6 @@ export default function ManagerTransactions() {
     return copy;
   }, [transactions, sortBy]);
 
-  console.log("sorted", sortedTransactions)
-
   const totalPages = Math.max(1, Math.ceil(totalCount / limit));
   const startIndex = totalCount === 0 ? 0 : (page - 1) * limit + 1;
   const endIndex = Math.min(totalCount, page * limit);
@@ -621,6 +619,7 @@ export default function ManagerTransactions() {
           return;
         }
         if (res.status === 400) {
+            console.log(res)
           setPurchaseError(
             "Unable to create purchase. One or more promotion IDs may be invalid, expired, or already used."
           );
@@ -1109,19 +1108,7 @@ export default function ManagerTransactions() {
 
         {/* Sort and page size */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-500">Order by:</span>
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              className="rounded-xl border border-gray-200 px-3 py-1.5 text-sm bg-white"
-            >
-              <option value="newest">Newest first</option>
-              <option value="oldest">Oldest first</option>
-              <option value="amount-desc">Points (high → low)</option>
-              <option value="amount-asc">Points (low → high)</option>
-            </select>
-          </div>
+
 
           <div className="flex items-center gap-2">
             <span className="text-sm text-gray-500">Rows per page:</span>

@@ -348,30 +348,6 @@ const sortedPromotions = useMemo(() => {
 
         {/* Sort and page size row */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-            <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-500">Order by:</span>
-
-            {/* sort field */}
-            <select
-                value={sortField}
-                onChange={(e) => setSortField(e.target.value)}
-                className="rounded-xl border border-gray-200 px-3 py-1.5 text-sm bg-white"
-            >
-                <option value="startTime">Start date</option>
-                <option value="endTime">End date</option>
-            </select>
-
-            {/* sort direction */}
-            <select
-                value={sortDirection}
-                onChange={(e) => setSortDirection(e.target.value)}
-                className="rounded-xl border border-gray-200 px-3 py-1.5 text-sm bg-white"
-            >
-                <option value="asc">Soonest first</option>
-                <option value="desc">Latest first</option>
-            </select>
-            </div>
-
 
           <div className="flex items-center gap-2">
             <span className="text-sm text-gray-500">Rows per page:</span>

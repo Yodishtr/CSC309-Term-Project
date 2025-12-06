@@ -64,7 +64,7 @@ router.post('/', requireRole(['cashier', 'manager', 'superuser']), async (req, r
                 })
                 if (!promo) { return res.status(400).json({error: "Bad Request 6"})}
                 if (promo.points) { totalPoints += promo.points; }
-                if (promo.rate) { totalPoints += Math.round((spent * promo.rate)/100); }
+                if (promo.rate) { totalPoints += Math.round((spent * promo.rate * 100)); }
             }
 
             // also check the automatic promotions to see if any are valid
@@ -84,7 +84,7 @@ router.post('/', requireRole(['cashier', 'manager', 'superuser']), async (req, r
 
             for (const promo of autoPromos) {
                 if (promo.points) { totalPoints += promo.points; }
-                if (promo.rate) { totalPoints += Math.round((spent * promo.rate)/100); }
+                if (promo.rate) { totalPoints += Math.round((spent * promo.rate * 100)); }
             }
 
             const cashier =  await prisma.user.findUnique({
@@ -109,7 +109,7 @@ router.post('/', requireRole(['cashier', 'manager', 'superuser']), async (req, r
                         },
                         suspicious,
                         user: {
-                            connect: { utorid }, // matches fields: [utorid], references: [utorid]
+                            connect: { utorid },
                         },
                         created: {
                             connect: { utorid: req.auth.utorid },
@@ -435,7 +435,6 @@ router.get('/:transactionId', requireRole(['manager', 'superuser']), async (req,
             toReturn.sent = 0 - t.points
             toReturn.recipient = t.relatedId
         }
-        console.log("to return", toReturn)
         return res.status(200).json(toReturn)
 
     } catch (err) {
@@ -573,8 +572,7 @@ router.patch('/:transactionId/processed', requireRole(['cashier', 'manager', 'su
             where: {utorid: old.utorid},
             select: {points: true}
         })
-        console.log(user.points)
-        console.log(old.points)
+
         if (user.points < 0 - old.points) { return res.status(400).json({error: "Insufficient Points"})}
 
         const {processed} = req.body

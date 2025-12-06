@@ -152,11 +152,8 @@ export default function NewPromotion() {
 
       const data = await res.json();
 
-      if (data.id) {
-        navigate(`/promotions/${data.id}`);
-      } else {
-        navigate("/promotions");
-      }
+    navigate("/promotions");
+    
     } catch (err) {
       console.error("Error creating promotion:", err);
       setError("An unexpected error occurred. Please try again.");
