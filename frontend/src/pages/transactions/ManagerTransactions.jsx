@@ -226,6 +226,47 @@ export default function ManagerTransactions() {
   }
 }
 
+useEffect(() => {
+  if (!token || !isManagerOrHigher) return;
+
+  async function fetchUsers() {
+    try {
+      const params = new URLSearchParams();
+      params.append("limit", "1000"); // or some max that's > total users
+
+      const res = await fetch(`${API_BASE_URL}/users?${params.toString()}`, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!res.ok) {
+        console.error("Failed to fetch users list:", res.status);
+        return;
+      }
+
+      const data = await res.json(); // { count, results }
+
+      const idToUtorid = {};
+      const utoridToId = {};
+
+      for (const u of data.results) {
+        const idStr = String(u.id);
+        idToUtorid[idStr] = u.utorid;
+        utoridToId[u.utorid] = idStr;
+      }
+
+      setUserMap(idToUtorid);          // id -> utorid
+      setUtoridToIdMap(utoridToId);    // utorid -> id
+    } catch (e) {
+      console.error("Error fetching users list:", e);
+    }
+  }
+
+  fetchUsers();
+}, [token, isManagerOrHigher]);
+
 
   // Fetch event names and user utorids for related info
   useEffect(() => {
@@ -888,6 +929,8 @@ export default function ManagerTransactions() {
       setAdjustLoading(false);
     }
   }
+
+  console.log("mapping", utoridToIdMap)
 
 
   return (
