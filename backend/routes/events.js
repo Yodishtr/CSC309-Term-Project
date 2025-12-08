@@ -22,7 +22,7 @@ router.post('/', requireRole(['manager', 'superuser']), async (req, res) => {
         if (endTime <= startTime || new Date(startTime) < now || new Date(endTime) < now) { return res.status(400).json({error: "Bad Request 5"}) }
 
         const newEvent = await prisma.event.create({
-            data: {name, description, location, startTime, endTime, capacity, spaceRemain: capacity, pointsRemain: points},
+            data: {name, description, location, startTime, endTime, capacity, spaceRemain: capacity, pointsRemain: points, published: true},
             select: {
                 id: true,
                 name: true,

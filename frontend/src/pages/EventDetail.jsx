@@ -214,8 +214,8 @@ export default function EventDetail() {
 
   if (!event) return null;
 
-  const isManager = user.role === "manager" || user.role === "superuser";
-  const isOrganizer = event.organizers?.some(o => o.utorid === user.utorid);
+  const isManager = (currentView === "manager" || currentView === "superuser");
+  const isOrganizer = event.organizers?.some(o => o.utorid === user?.utorid);
   const canManage = isManager || isOrganizer;
   const isEnded = new Date(event.endTime) < new Date();
   const isStarted = new Date(event.startTime) < new Date();

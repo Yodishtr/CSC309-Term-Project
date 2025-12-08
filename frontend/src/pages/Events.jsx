@@ -5,7 +5,7 @@ import { useAuth } from "../auth/AuthContext";
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 export default function Events() {
-  const { user, token } = useAuth();
+  const { user, token, currentView } = useAuth();
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -46,7 +46,7 @@ export default function Events() {
       if (filters.started) params.append("started", filters.started);
       if (filters.ended) params.append("ended", filters.ended);
       if (filters.showFull) params.append("showFull", "true");
-      if (filters.published && (user.role === "manager" || user.role === "superuser")) {
+      if (filters.published && (currentView === "manager" || currentView === "superuser")) {
         params.append("published", filters.published);
       }
 
@@ -95,7 +95,7 @@ export default function Events() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold text-gray-900">Events</h1>
-        {(user.role === "manager" || user.role === "superuser") && (
+        {(currentView === "manager" || currentView === "superuser") && (
           <Link
             to="/events/create"
             className="bg-pink-600 text-white px-6 py-2 rounded-lg hover:bg-pink-700 transition font-medium"
@@ -157,7 +157,7 @@ export default function Events() {
             </select>
           </div>
 
-          {(user.role === "manager" || user.role === "superuser") && (
+          {(currentView === "manager" || currentView === "superuser") && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Published
@@ -226,7 +226,7 @@ export default function Events() {
                     <h3 className="text-xl font-semibold text-gray-900">
                       {event.name}
                     </h3>
-                    {(user.role === "manager" || user.role === "superuser") && (
+                    {(currentView === "manager" || currentView === "superuser") && (
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                         event.published 
                           ? "bg-green-100 text-green-700" 
