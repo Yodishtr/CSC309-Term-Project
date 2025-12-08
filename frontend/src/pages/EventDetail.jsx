@@ -15,6 +15,60 @@ export default function EventDetail() {
   const [actionLoading, setActionLoading] = useState(false);
   const [isAttending, setIsAttending] = useState(false);
 
+    function formatICSDate(date) {
+    // Format: YYYYMMDDTHHMMSSZ
+    return date.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+  }
+
+  function escapeICS(text = "") {
+    return String(text)
+      .replace(/\\/g, "\\\\")
+      .replace(/;/g, "\\;")
+      .replace(/,/g, "\\,")
+      .replace(/\n/g, "\\n");
+  }
+
+  function generateICSContent(event) {
+    const start = new Date(event.startTime);
+    const end = new Date(event.endTime);
+
+    const lines = [
+      "BEGIN:VCALENDAR",
+      "VERSION:2.0",
+      "CALSCALE:GREGORIAN",
+      "METHOD:PUBLISH",
+      "BEGIN:VEVENT",
+      `SUMMARY:${escapeICS(event.name)}`,
+      `DESCRIPTION:${escapeICS(event.description || "")}`,
+      `LOCATION:${escapeICS(event.location || "")}`,
+      `DTSTART:${formatICSDate(start)}`,
+      `DTEND:${formatICSDate(end)}`,
+      "END:VEVENT",
+      "END:VCALENDAR",
+    ];
+
+    return lines.join("\r\n");
+  }
+
+  function handleAddToCalendar() {
+    if (!event) return;
+
+    const icsContent = generateICSContent(event);
+    const blob = new Blob([icsContent], {
+      type: "text/calendar;charset=utf-8",
+    });
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `event-${eventId}.ics`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }
+
+
   useEffect(() => {
     fetchEvent();
   }, [eventId, token]);
@@ -289,6 +343,14 @@ export default function EventDetail() {
               </div>
             </div>
           </div>
+
+        <button
+          type="button"
+          onClick={handleAddToCalendar}
+          className="px-4 py-2 bg-gray-100 text-gray-800 rounded-lg hover:bg-gray-200 transition font-medium"
+        >
+          📅 Add to Calendar
+        </button>
         </div>
 
         {/* Organizers */}
