@@ -332,11 +332,10 @@ router.delete('/:eventId', requireRole(['manager', 'superuser']), async (req, re
 
         const toDelete = await prisma.event.findUnique({
             where: { id },
-            select: { published: true }
+            select: { id: true }
         })
         
         if (!toDelete) { return res.status(404).json({error: "Not Found"}) }  
-        if (toDelete.published) { return res.status(400).json({error: "Bad Request"}) }  
 
         await prisma.event.delete({ where: { id } })
         return res.status(204).send()

@@ -237,7 +237,7 @@ export default function EventDetail() {
               >
                 Edit
               </Link>
-              {isManager && !event.published && (
+              {isManager && (
                 <button
                   onClick={handleDeleteEvent}
                   disabled={actionLoading}
