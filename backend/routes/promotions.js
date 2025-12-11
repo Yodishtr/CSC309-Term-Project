@@ -112,7 +112,6 @@ router.get('/', requireRole(['regular', 'cashier', 'manager', 'superuser']), asy
                 where.usedBy = {
                     none: { utorid: req.auth.utorid }
                 };
-                newType = 'onetime'
             }
             if (started || ended) { return res.status(400).json({error: "Bad Request"}) }
         } else if (['manager', 'superuser'].includes(requesterRole)) {
@@ -141,8 +140,6 @@ router.get('/', requireRole(['regular', 'cashier', 'manager', 'superuser']), asy
                 select
             })
         ])
-        console.log("count:", count)
-        console.log("results: ", results)
         return res.status(200).json({count, results})
     } catch (err) {return res.status(500).json({'error': err.message})}
 })
