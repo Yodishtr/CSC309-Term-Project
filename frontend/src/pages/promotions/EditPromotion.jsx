@@ -379,6 +379,9 @@ export default function EditPromotion() {
         };
       });
 
+      navigate("/promotions", { replace: true });
+
+
       if (data.endTime) {
         setEndTime(isoToLocalInputValue(data.endTime));
       }
