@@ -174,7 +174,7 @@ export default function Dashboard() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Link
-              to="/cashier/create-transaction"
+              to="/transactions"
               className="bg-white p-8 rounded-xl shadow-md hover:shadow-lg transition"
             >
               <div className="text-pink-600 text-4xl mb-3">💳</div>
@@ -182,7 +182,7 @@ export default function Dashboard() {
               <p className="text-gray-600">Process customer purchases and award points</p>
             </Link>
             <Link
-              to="/cashier/process-redemption"
+              to="/transactions"
               className="bg-white p-8 rounded-xl shadow-md hover:shadow-lg transition"
             >
               <div className="text-pink-600 text-4xl mb-3">✅</div>
