@@ -51,35 +51,42 @@ export default function UserDetail() {
     }
   };
 
-  const handleUpdate = async (updates) => {
-    setError("");
-    setSuccess("");
-    setActionLoading(true);
+const handleUpdate = async (updates) => {
+  setError("");
+  setSuccess("");
+  setActionLoading(true);
 
-    try {
-      const res = await fetch(`${API_BASE_URL}/users/${userId}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(updates),
-      });
+  try {
+    const res = await fetch(`${API_BASE_URL}/users/${userId}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(updates),
+    });
 
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Failed to update user");
-      }
-
-      setSuccess("User updated successfully!");
-      await fetchUser();
-    } catch (err) {
-      console.error("Error updating user:", err);
-      setError(err.message);
-    } finally {
-      setActionLoading(false);
+    if (!res.ok) {
+      const data = await res.json();
+      throw new Error(data.error || "Failed to update user");
     }
-  };
+
+    const updatedUser = await res.json();
+    
+    setUserData(updatedUser);
+    
+    setSuccess("User updated successfully!");
+    
+    // Clear success message after 3 seconds
+    setTimeout(() => setSuccess(""), 3000);
+    
+  } catch (err) {
+    console.error("Error updating user:", err);
+    setError(err.message);
+  } finally {
+    setActionLoading(false);
+  }
+};
 
   const handleVerify = () => {
     handleUpdate({ verified: true });
@@ -132,15 +139,14 @@ export default function UserDetail() {
 
   // Determine what roles this user can be changed to
   const availableRoles = [];
-  if (isManager) {
-    if (userData.role === "regular") availableRoles.push("cashier");
-    if (userData.role === "cashier") availableRoles.push("regular");
-  }
   if (isSuperuser) {
     if (userData.role === "regular") availableRoles.push("cashier", "manager", "superuser");
     if (userData.role === "cashier") availableRoles.push("regular", "manager", "superuser");
     if (userData.role === "manager") availableRoles.push("regular", "cashier", "superuser");
     if (userData.role === "superuser") availableRoles.push("regular", "cashier", "manager");
+  } else if (isManager) {
+    if (userData.role === "regular") availableRoles.push("cashier");
+    if (userData.role === "cashier") availableRoles.push("regular");
   }
 
   return (
