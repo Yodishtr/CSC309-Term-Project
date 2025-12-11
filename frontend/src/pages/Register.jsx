@@ -30,40 +30,21 @@ export default function Register() {
     setLoading(true);
 
     try {
-      const dataToSend = {
-        ...formData,
-        password: "password123", // Default password - user should change this
-      };
-      
-      // DEBUG: See what we're actually sending
-      console.log("=== SENDING TO BACKEND ===");
-      console.log("Data:", dataToSend);
-      console.log("Password included?", dataToSend.password !== undefined);
-      console.log("========================");
-
       const res = await fetch(`${API_BASE_URL}/users`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(dataToSend),
+        body: JSON.stringify(formData),
       });
 
       if (!res.ok) {
         const data = await res.json();
-        console.log("=== BACKEND ERROR ===");
-        console.log("Status:", res.status);
-        console.log("Error:", data);
-        console.log("====================");
         throw new Error(data.error || "Failed to create user");
       }
 
       const data = await res.json();
-      console.log("=== SUCCESS ===");
-      console.log("Created user:", data);
-      console.log("===============");
-      
       setSuccess({
         message: "User created successfully!",
         resetToken: data.resetToken,
@@ -127,19 +108,9 @@ export default function Register() {
               <p className="text-sm text-gray-600">
                 <span className="font-medium">Email:</span> {success.email}
               </p>
-              <div className="mt-3 pt-3 border-t border-green-200">
-                <p className="text-sm font-medium text-blue-700">Default Login Credentials:</p>
-                <p className="text-xs bg-blue-50 p-2 rounded mt-1">
-                  <span className="font-medium">Email:</span> {success.email}<br />
-                  <span className="font-medium">Password:</span> password123
-                </p>
-                <p className="text-xs text-gray-500 mt-1">
-                  ⚠️ User should change password after first login
-                </p>
-              </div>
               {success.resetToken && (
                 <div className="mt-3 pt-3 border-t border-green-200">
-                  <p className="text-sm font-medium text-yellow-700">Reset Token (optional):</p>
+                  <p className="text-sm font-medium text-yellow-700">Reset Token (share with user):</p>
                   <p className="text-xs font-mono bg-gray-100 p-2 rounded mt-1 break-all">
                     {success.resetToken}
                   </p>
